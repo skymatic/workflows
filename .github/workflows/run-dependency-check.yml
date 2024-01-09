@@ -2,6 +2,11 @@ name: Run OWASP Maven Dependency Check
 on:
   workflow_call:
     inputs:
+      runner-os:
+        description: 'The OS to run the check on.'
+        default: 'ubuntu-latest'
+        required: false
+        type: string
       java-distribution:
         description: 'The java distribution to run the check with.'
         default: 'temurin'
@@ -24,7 +29,7 @@ on:
 jobs:
   check-dependencies:
     name: Check dependencies
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-os }}
     steps:
       - uses: actions/checkout@v4
         with:
