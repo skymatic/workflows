@@ -17,6 +17,11 @@ on:
         default: 21
         required: false
         type: number
+      check-command:
+        description: 'The command used to generate the report.'
+        default: 'mvn -B validate -Pdependency-check'
+        required: false
+        type: string
     secrets:
       nvd-api-key:
         description: 'The NVD API Key used to fetch the NVD database.'
@@ -52,7 +57,7 @@ jobs:
       - name: Run org.owasp:dependency-check plugin
         id: dependency-check
         continue-on-error: true
-        run: mvn -B validate -Pdependency-check
+        run: ${{ inputs.check-command }}
         env:
           NVD_API_KEY: ${{ secrets.nvd-api-key }}
       - name: Upload report on failure
