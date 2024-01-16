@@ -1,0 +1,86 @@
+name: Run OWASP Maven Dependency Check
+on:
+  workflow_call:
+    inputs:
+      runner-os:
+        description: 'The OS to run the check on.'
+        default: 'ubuntu-latest'
+        required: false
+        type: string
+      java-distribution:
+        description: 'The java distribution to run the check with.'
+        default: 'temurin'
+        required: false
+        type: string
+      java-version:
+        description: 'The java version to run the check with.'
+        default: 21
+        required: false
+        type: number
+      check-command:
+        description: 'The command used to generate the report.'
+        default: 'mvn -B validate -Pdependency-check'
+        required: false
+        type: string
+    secrets:
+      nvd-api-key:
+        description: 'The NVD API Key used to fetch the NVD database.'
+        required: true
+      slack-webhook-url:
+        description: 'The Slack webhook used for publishing the results.'
+        required: true
+
+
+jobs:
+  check-dependencies:
+    name: Check dependencies
+    runs-on: ${{ inputs.runner-os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+          cache: 'maven'
+      - name: Cache NVD DB
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data/
+          key: dependency-check-${{ github.run_id }}
+          restore-keys: |
+            dependency-check
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+      - name: Run org.owasp:dependency-check plugin
+        id: dependency-check
+        continue-on-error: true
+        run: ${{ inputs.check-command }}
+        env:
+          NVD_API_KEY: ${{ secrets.nvd-api-key }}
+      - name: Upload report on failure
+        if: steps.dependency-check.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.html
+          if-no-files-found: error
+      - name: Slack Notification on regular check
+        if: github.event_name == 'schedule' && steps.dependency-check.outcome == 'failure'
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.slack-webhook-url }}
+          SLACK_USERNAME: 'Cryptobot'
+          SLACK_ICON: false
+          SLACK_ICON_EMOJI: ':bot:'
+          SLACK_CHANNEL: 'cryptomator-desktop'
+          SLACK_TITLE: "Vulnerabilities in ${{ github.event.repository.name }} detected."
+          SLACK_MESSAGE: "Download the <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|report> for more details."
+          SLACK_FOOTER: false
+          MSG_MINIMAL: true
+      - name: Failing workflow on release branch
+        if: github.event_name == 'push' && steps.dependency-check.outcome == 'failure'
+        shell: bash
+        run: exit 1
