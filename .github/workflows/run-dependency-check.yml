@@ -19,7 +19,7 @@ on:
         type: number
       check-command:
         description: 'The command used to generate the report.'
-        default: 'mvn -B validate -Pdependency-check'
+        default: 'mvn org.owasp:dependency-check-maven:12.1.6:check -DnvdValidForHours=24 -DfailBuildOnCVSS=0 -DsuppressionFile=suppression.xml -DnvdApiKeyEnvironmentVariable=NVD_API_KEY -DossIndexServerId=oss-index'
         required: false
         type: string
     secrets:
@@ -60,6 +60,8 @@ jobs:
             dependency-check
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+      - name: Override maven user config
+        run: mv -f settings.xml ~/.m2
       - name: Run org.owasp:dependency-check plugin
         id: dependency-check
         continue-on-error: true
