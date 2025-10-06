@@ -60,13 +60,29 @@ jobs:
             dependency-check
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
-      - uses: actions/checkout@v5
-        with:
-          repository: skymatic/workflows
-          ref: ${{ github.workflow_sha }}
-          path: maven-server-config
-      - name: Override maven user config
-        run: mv -f maven-server-config/settings.xml ~/.m2
+      - name: Override maven user settings
+        run: |
+          cat > ~/.m2/settings.xml << EOF
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+              <localRepository/>
+              <interactiveMode/>
+              <offline/>
+              <pluginGroups/>
+              <servers>
+                  <server>
+                      <id>oss-index</id>
+                      <username>${env.OSSINDEX_USERNAME}</username>
+                      <password>${env.OSSINDEX_PASSWORD}</password>
+                      <configuration></configuration>
+                  </server>
+              </servers>
+              <mirrors/>
+              <proxies/>
+              <profiles/>
+              <activeProfiles/>
+          </settings>
+          EOF
       - name: Run org.owasp:dependency-check plugin
         id: dependency-check
         continue-on-error: true
