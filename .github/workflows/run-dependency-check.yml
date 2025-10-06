@@ -89,8 +89,8 @@ jobs:
         run: ${{ inputs.check-command }}
         env:
           NVD_API_KEY: ${{ secrets.nvd-api-key }}
-          OSSINDEX_USERNAME: ${{ secrets.oss-index-user }}
-          OSSINDEX_PASSWORD: ${{ secrets.oss-index-token }}
+          OSSINDEX_USERNAME: ${{ secrets.ossindex-username }}
+          OSSINDEX_PASSWORD: ${{ secrets.ossindex-token }}
       - name: Upload report on failure
         if: steps.dependency-check.outcome == 'failure'
         uses: actions/upload-artifact@v4
