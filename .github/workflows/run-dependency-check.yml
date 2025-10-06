@@ -72,8 +72,8 @@ jobs:
               <servers>
                   <server>
                       <id>oss-index</id>
-                      <username>${env.OSSINDEX_USERNAME}</username>
-                      <password>${env.OSSINDEX_PASSWORD}</password>
+                      <username>\${env.OSSINDEX_USERNAME}</username>
+                      <password>\${env.OSSINDEX_PASSWORD}</password>
                       <configuration></configuration>
                   </server>
               </servers>
