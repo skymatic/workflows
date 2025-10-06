@@ -19,13 +19,19 @@ on:
         type: number
       check-command:
         description: 'The command used to generate the report.'
-        default: 'mvn -B validate -Pdependency-check'
+        default: 'mvn --s maven-settings.xml org.owasp:dependency-check-maven:12.1.6:check -DnvdValidForHours=24 -DfailBuildOnCVSS=0 -DsuppressionFile=suppression.xml -DnvdApiKeyEnvironmentVariable=NVD_API_KEY -DossIndexServerId=oss-index'
         required: false
         type: string
     secrets:
       nvd-api-key:
         description: 'The NVD API Key used to fetch the NVD database.'
         required: true
+      ossindex-username:
+        description: 'The OSS Index username to access the OSS Index database'
+        required: false
+      ossindex-token:
+        description: 'The OSS Index API token to access the OSS Index database'
+        required: false
       slack-webhook-url:
         description: 'The Slack webhook used for publishing the results.'
         required: true
@@ -54,12 +60,37 @@ jobs:
             dependency-check
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+      - name: Override maven user settings
+        run: |
+          cat > maven-settings.xml << EOF
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+              <localRepository/>
+              <interactiveMode/>
+              <offline/>
+              <pluginGroups/>
+              <servers>
+                  <server>
+                      <id>oss-index</id>
+                      <username>\${env.OSSINDEX_USERNAME}</username>
+                      <password>\${env.OSSINDEX_PASSWORD}</password>
+                      <configuration></configuration>
+                  </server>
+              </servers>
+              <mirrors/>
+              <proxies/>
+              <profiles/>
+              <activeProfiles/>
+          </settings>
+          EOF
       - name: Run org.owasp:dependency-check plugin
         id: dependency-check
         continue-on-error: true
         run: ${{ inputs.check-command }}
         env:
           NVD_API_KEY: ${{ secrets.nvd-api-key }}
+          OSSINDEX_USERNAME: ${{ secrets.ossindex-username }}
+          OSSINDEX_PASSWORD: ${{ secrets.ossindex-token }}
       - name: Upload report on failure
         if: steps.dependency-check.outcome == 'failure'
         uses: actions/upload-artifact@v4
