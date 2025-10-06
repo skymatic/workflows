@@ -60,8 +60,13 @@ jobs:
             dependency-check
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+      - uses: actions/checkout@v5
+        with:
+          repository: skymatic/workflows
+          ref: ${{ github.workflow_sha }}
+          path: maven-server-config
       - name: Override maven user config
-        run: mv -f settings.xml ~/.m2
+        run: mv -f maven-server-config/settings.xml ~/.m2
       - name: Run org.owasp:dependency-check plugin
         id: dependency-check
         continue-on-error: true
