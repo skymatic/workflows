@@ -19,7 +19,7 @@ on:
         type: number
       check-command:
         description: 'The command used to generate the report.'
-        default: 'mvn org.owasp:dependency-check-maven:12.1.6:check -DnvdValidForHours=24 -DfailBuildOnCVSS=0 -DsuppressionFile=suppression.xml -DnvdApiKeyEnvironmentVariable=NVD_API_KEY -DossIndexServerId=oss-index'
+        default: 'mvn --s maven-settings.xml org.owasp:dependency-check-maven:12.1.6:check -DnvdValidForHours=24 -DfailBuildOnCVSS=0 -DsuppressionFile=suppression.xml -DnvdApiKeyEnvironmentVariable=NVD_API_KEY -DossIndexServerId=oss-index'
         required: false
         type: string
     secrets:
@@ -62,7 +62,7 @@ jobs:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
       - name: Override maven user settings
         run: |
-          cat > ~/.m2/settings.xml << EOF
+          cat > maven-settings.xml << EOF
           <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
               <localRepository/>
