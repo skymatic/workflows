@@ -91,6 +91,17 @@ jobs:
               <activeProfiles/>
           </settings>
           EOF
+      - name: Check if default suppression file exists
+        id: config-suppression
+        run: |
+          SUPPRESS_OPTION=""
+          # check existence of default suppression file
+          if [[ "${SUPPRESSION_FILE}" == "suppression.xml" && -f "${SUPPRESSION_FILE}" ]]; then
+            SUPPRESS_OPTION="-DsuppressionFile=${SUPPRESSION_FILE}"
+          fi
+          echo "cli-parameter=${SUPPRESS_OPTION}" >> $GITHUB_OUTPUT
+        env:
+          SUPPRESSION_FILE: ${{ inputs.suppression-path }}
       - name: Run org.owasp:dependency-check plugin
         id: dependency-check
         continue-on-error: true
@@ -100,13 +111,13 @@ jobs:
           --file ${POM_FILE}
           -DnvdValidForHours=24
           -DfailBuildOnCVSS=0
-          -DsuppressionFile=${SUPPRESSION_FILE}
           -DnvdApiKeyEnvironmentVariable=NVD_API_KEY
           -DossIndexServerId=oss-index
+          ${SUPPRESSION_OPTION}
         env:
           POM_FILE: ${{ inputs.pom-path }}
-          SUPPRESSION_FILE: ${{ inputs.suppression-path }}
           NVD_API_KEY: ${{ secrets.nvd-api-key }}
+          SUPPRESSION_OPTION: ${{ steps.config-suppression.outputs.cli-parameter }}
           OSSINDEX_USERNAME: ${{ secrets.ossindex-username }}
           OSSINDEX_PASSWORD: ${{ secrets.ossindex-token }}
       - name: Upload report on failure
