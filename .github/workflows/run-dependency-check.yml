@@ -41,6 +41,9 @@ on:
         description: 'The Slack webhook used for publishing the results.'
         required: true
 
+defaults:
+  run:
+    shell: bash
 
 jobs:
   check-dependencies:
