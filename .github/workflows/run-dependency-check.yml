@@ -45,6 +45,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  DEPENDENCY_CHECK_VERSION: 12.1.9
+
 jobs:
   check-dependencies:
     name: Check dependencies
@@ -106,7 +109,7 @@ jobs:
         id: dependency-check
         continue-on-error: true
         run: >
-          mvn org.owasp:dependency-check-maven:12.1.6:check
+          mvn org.owasp:dependency-check-maven:${{env.DEPENDENCY_CHECK_VERSION}}:check
           --settings maven-settings.xml
           --file ${POM_FILE}
           -DnvdValidForHours=24
