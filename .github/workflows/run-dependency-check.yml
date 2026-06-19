@@ -129,6 +129,7 @@ jobs:
         with:
           name: dependency-check-report
           path: target/dependency-check-report.html
+          archive: false
           if-no-files-found: error
       - name: Slack Notification on regular check
         if: github.event_name == 'schedule' && steps.dependency-check.outcome == 'failure'
