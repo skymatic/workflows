@@ -46,7 +46,7 @@ defaults:
     shell: bash
 
 env:
-  DEPENDENCY_CHECK_VERSION: 12.2.2
+  DEPENDENCY_CHECK_VERSION: 13.0.0
 
 jobs:
   check-dependencies:
