@@ -59,13 +59,19 @@ jobs:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
           cache: 'maven'
-      - name: Cache NVD DB
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Determine NVD DB cache key
+        id: nvd-cache-key
+        # one cache entry per day at most, matching nvdValidForHours=24
+        run: echo "key=dependency-check-$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
+      - name: Restore NVD DB
+        id: restore-nvd-db
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.m2/repository/org/owasp/dependency-check-data/
-          key: dependency-check-${{ github.run_id }}
+          # kept outside ~/.m2/repository, otherwise the setup-java maven cache stores another copy
+          path: ${{ runner.temp }}/dependency-check-data
+          key: ${{ steps.nvd-cache-key.outputs.key }}
           restore-keys: |
-            dependency-check
+            dependency-check-
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
       - name: Override maven user settings
@@ -113,13 +119,24 @@ jobs:
           -DfailBuildOnCVSS=0
           -DnvdApiKeyEnvironmentVariable=NVD_API_KEY
           -DossIndexServerId=oss-index
+          -DdataDirectory=${DATA_DIRECTORY}
           ${SUPPRESSION_OPTION}
         env:
           POM_FILE: ${{ inputs.pom-path }}
+          DATA_DIRECTORY: ${{ runner.temp }}/dependency-check-data
           NVD_API_KEY: ${{ secrets.nvd-api-key }}
           SUPPRESSION_OPTION: ${{ steps.config-suppression.outputs.cli-parameter }}
           OSSINDEX_USERNAME: ${{ secrets.ossindex-username }}
           OSSINDEX_PASSWORD: ${{ secrets.ossindex-token }}
+      - name: Save NVD DB
+        # only on the default branch (schedule always runs there), as its caches are readable from all other branches
+        if: >
+          steps.restore-nvd-db.outputs.cache-hit != 'true'
+          && (github.event_name == 'schedule' || github.ref_name == github.event.repository.default_branch)
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/dependency-check-data
+          key: ${{ steps.nvd-cache-key.outputs.key }}
       - name: Upload report on failure
         if: steps.dependency-check.outcome == 'failure'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
